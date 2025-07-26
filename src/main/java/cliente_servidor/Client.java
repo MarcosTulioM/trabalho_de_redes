@@ -1,3 +1,5 @@
+package cliente_servidor;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,38 +10,50 @@ import java.util.Scanner;
 
 public class Client {
 
-    private static final String ENDERECO_SERVIDOR = "localhost"; // O IP ou hostname do servidor
-    private static final int PORTA = 8080; // A mesma porta que o servidor está escutando
+    private static final String ENDERECO_SERVIDOR = "localhost";
+    private static final int PORTA = 8080;
+    private static String meuNome;
 
     public static void main(String[] args) {
         System.out.println("Cliente iniciando...");
 
-        //Garante que o socket, in, out e scanner sejam fechados automaticamente
         try (Socket socket = new Socket(ENDERECO_SERVIDOR, PORTA);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              Scanner scanner = new Scanner(System.in)) {
 
             System.out.println("Conectado ao servidor em " + ENDERECO_SERVIDOR + ":" + PORTA);
+
+            System.out.print("Digite seu nome: ");
+            meuNome = scanner.nextLine();
+            System.out.print("Digite seu número (ex: 1): ");
+            String numeroCliente = scanner.nextLine();
+
+            out.println("LOGIN:" + meuNome + ":" + numeroCliente);
+
+            new Thread(() -> {
+                try {
+                    String mensagemServidor;
+                    while ((mensagemServidor = in.readLine()) != null) {
+                        System.out.println("Do servidor: " + mensagemServidor);
+                    }
+                } catch (IOException e) {
+                    System.err.println("Erro ao ler do servidor (conexão perdida?): " + e.getMessage());
+                }
+            }).start();
+
             System.out.println("Digite 'sair' para desconectar.");
-
             String mensagemUsuario;
-            String mensagemServidor;
 
-            // Enviar mensagens do cliente para o servidor
             while (true) {
-                System.out.print("Você: ");
-                mensagemUsuario = scanner.nextLine(); // Lê a entrada do usuário
+                System.out.print("Você (" + meuNome + "): "); // Exibe o nome do usuário
+                mensagemUsuario = scanner.nextLine();
 
-                out.println(mensagemUsuario); // Envia a mensagem para o servidor
+                out.println(mensagemUsuario);
 
                 if (mensagemUsuario.equalsIgnoreCase("sair")) {
                     break;
                 }
-
-                // Espera e lê a resposta do servidor
-                mensagemServidor = in.readLine();
-                System.out.println("Servidor: " + mensagemServidor);
             }
 
         } catch (UnknownHostException e) {
